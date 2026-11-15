@@ -38,6 +38,33 @@ export function UserCard({ id }: { id: number }) {
 }`,
   },
   {
+    id: 'fast-http-client',
+    label: 'fast-http-client',
+    language: 'ts',
+    title: 'api.ts · npm install fast-http-client',
+    code: `import { createHttp, HttpError } from 'fast-http-client';
+
+// Retries, a circuit breaker and a GET cache, on top of fetch.
+export const api = createHttp({ baseUrl: '${PUBLIC_ORIGIN}/v1', cache: 'memory' });
+
+type Post = { id: number; userId: number; title: string; body: string };
+type Page<T> = { data: T[]; meta: { totalItems: number }; links: { next: string | null } };
+type Problem = { title: string; errors: { field: string; message: string }[] };
+
+const { data: posts } = await api.get<Page<Post>>('/posts', {
+  query: { page: 1, limit: 10, sort: '-createdAt' },
+});
+
+try {
+  await api.post<Post>('/posts', { userId: 1, title: 'Hi' });
+} catch (err) {
+  // Non-2xx responses throw, with the RFC 9457 body attached.
+  if (err instanceof HttpError && err.status === 422) {
+    (err.data as Problem).errors.forEach((e) => form.setError(e.field, e.message));
+  }
+}`,
+  },
+  {
     id: 'errors',
     label: 'Errors',
     language: 'ts',
