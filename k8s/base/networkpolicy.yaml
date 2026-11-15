@@ -28,10 +28,21 @@ spec:
         - { port: 53, protocol: UDP }
         - { port: 53, protocol: TCP }
     # Redis: Azure Cache for Redis (TLS 6380) or an in-cluster Redis (6379).
+    # Its address is specific to your environment, so this rule allows these ports to any
+    # destination. Narrow it to your cache by uncommenting `to:` with its private endpoint
+    # address (or a namespaceSelector for an in-cluster Redis).
     - ports:
         - { port: 6379, protocol: TCP }
         - { port: 6380, protocol: TCP }
-    # OpenTelemetry collector: OTLP gRPC (4317) and HTTP (4318).
-    - ports:
+      # to:
+      #   - ipBlock:
+      #       cidr: 10.0.8.4/32 # Azure Cache for Redis private endpoint
+    # OpenTelemetry collector (OTLP gRPC 4317, HTTP 4318), only in the namespace the
+    # configmap's OTEL_EXPORTER_OTLP_ENDPOINT points at.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
         - { port: 4317, protocol: TCP }
         - { port: 4318, protocol: TCP }

@@ -217,22 +217,6 @@ kubectl apply -k k8s/base
 
 Point DNS for `fakerjson.com` and `www.fakerjson.com` at the ingress controller's public IP. `www` redirects to the apex.
 
-Checklist:
-
-- **Client IP.** Rate limits are per client IP. Set `externalTrafficPolicy: Local` on the ingress
-  controller's LoadBalancer Service so `X-Forwarded-For` carries the real client address.
-  `TRUST_PROXY` (default: private ranges) decides whose `X-Forwarded-For` the app believes.
-- **Ingress class.** `webapprouting.kubernetes.azure.com` is the AKS application routing add-on; use
-  `nginx` for a self-managed ingress-nginx. The NetworkPolicy allows traffic from either namespace.
-- **Shutdown.** On SIGTERM, readiness returns 503 for `SHUTDOWN_DELAY_MS` (5 s) so the ingress stops
-  routing new requests, then the server drains, well within `terminationGracePeriodSeconds`.
-- **Keep-alive.** `KEEP_ALIVE_TIMEOUT_MS` (65 s) is above ingress-nginx's 60 s upstream keep-alive, which
-  avoids 502s from reused sockets.
-- **Logs** are JSON on stdout (Pino) with the request id and trace id, so Container Insights or Loki
-  picks them up as-is.
-- **Telemetry.** Set `OTEL_EXPORTER_OTLP_ENDPOINT` in `k8s/base/configmap.yaml` to your collector's
-  service. Traces are sampled at 10% (`OTEL_TRACES_SAMPLER_ARG`), and the NetworkPolicy allows 4317/4318 egress.
-
 ## Configuration
 
 All settings are environment variables, validated at startup. See [.env.example](.env.example).

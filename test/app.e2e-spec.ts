@@ -233,6 +233,18 @@ describe('FakerJson (e2e)', () => {
       await http.get('/v1/users/1?delay=-1').expect(400);
     });
 
+    it('/v1/echo is never cacheable and redacts credentials', async () => {
+      const res = await http
+        .get('/v1/echo')
+        .set('Authorization', 'Bearer secret-token')
+        .set('Cookie', 'session=abc')
+        .expect(200);
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(res.body.headers.authorization).toBe('[redacted]');
+      expect(res.body.headers.cookie).toBe('[redacted]');
+      expect(JSON.stringify(res.body)).not.toContain('secret-token');
+    });
+
     it('/v1/echo reflects the request', async () => {
       const res = await http.post('/v1/echo?x=1').send({ hello: 'world' }).expect(201);
       expect(res.body).toMatchObject({ method: 'POST', path: '/v1/echo', query: { x: '1' }, body: { hello: 'world' } });

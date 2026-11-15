@@ -52,6 +52,8 @@ class EchoResponse {
 }
 
 
+const REDACTED_HEADERS = ['authorization', 'proxy-authorization', 'cookie', 'x-api-key'];
+
 /** `GET /v1`: the API's machine-readable index. The site itself is served at `/`. */
 @ApiTags('Meta')
 @Controller({ version: '1' })
@@ -147,11 +149,14 @@ export class UtilitiesController {
 
   private echo(req: NodeRequest, body: unknown): EchoResponse {
     const [path = '/'] = (req.url ?? '/').split('?');
+    // Show that a credential arrived, never its value.
+    const headers: Record<string, unknown> = { ...req.headers };
+    for (const name of REDACTED_HEADERS) if (name in headers) headers[name] = '[redacted]';
     return {
       method: req.method ?? 'GET',
       path,
       query: { ...(req.query as Record<string, unknown>) },
-      headers: { ...req.headers },
+      headers,
       body,
       ip: req.ip ?? '',
     };
