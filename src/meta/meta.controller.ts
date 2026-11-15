@@ -52,7 +52,13 @@ class EchoResponse {
 }
 
 
-const REDACTED_HEADERS = ['authorization', 'proxy-authorization', 'cookie', 'x-api-key'];
+/**
+ * Headers whose values are never echoed: the usual names plus anything that looks like a
+ * credential (x-auth-token, x-session-id, x-hub-signature, ...).
+ */
+const CREDENTIAL_HEADER =
+  /(^|-)(authorization|auth|token|secret|credentials?|api-?key|apikey|session|cookie|password|passwd|signature|jwt|bearer)(-|$)/;
+const isCredentialHeader = (name: string) => CREDENTIAL_HEADER.test(name.toLowerCase());
 
 /** `GET /v1`: the API's machine-readable index. The site itself is served at `/`. */
 @ApiTags('Meta')
@@ -151,7 +157,7 @@ export class UtilitiesController {
     const [path = '/'] = (req.url ?? '/').split('?');
     // Show that a credential arrived, never its value.
     const headers: Record<string, unknown> = { ...req.headers };
-    for (const name of REDACTED_HEADERS) if (name in headers) headers[name] = '[redacted]';
+    for (const name of Object.keys(headers)) if (isCredentialHeader(name)) headers[name] = '[redacted]';
     return {
       method: req.method ?? 'GET',
       path,

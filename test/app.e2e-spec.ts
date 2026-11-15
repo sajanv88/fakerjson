@@ -238,11 +238,21 @@ describe('FakerJson (e2e)', () => {
         .get('/v1/echo')
         .set('Authorization', 'Bearer secret-token')
         .set('Cookie', 'session=abc')
+        .set('X-Auth-Token', 'tok-123')
+        .set('X-Session-Id', 'sess-456')
+        .set('X-Client-Name', 'storybook')
         .expect(200);
       expect(res.headers['cache-control']).toBe('no-store');
       expect(res.body.headers.authorization).toBe('[redacted]');
       expect(res.body.headers.cookie).toBe('[redacted]');
-      expect(JSON.stringify(res.body)).not.toContain('secret-token');
+      expect(res.body.headers['x-auth-token']).toBe('[redacted]');
+      expect(res.body.headers['x-session-id']).toBe('[redacted]');
+      // Ordinary headers are still shown.
+      expect(res.body.headers['x-client-name']).toBe('storybook');
+      expect(JSON.stringify(res.body)).not.toMatch(/secret-token|tok-123|sess-456/);
+
+      const head = await http.head('/v1/echo').expect(200);
+      expect(head.headers['cache-control']).toBe('no-store');
     });
 
     it('/v1/echo reflects the request', async () => {

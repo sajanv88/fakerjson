@@ -44,14 +44,15 @@ export class HttpCacheInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const req = http.getRequest<NodeRequest>();
     const res = http.getResponse<NodeResponse>();
-    if (req.method !== 'GET') return next.handle();
     const skip = this.reflector.getAllAndOverride<boolean>(NO_CACHE, [context.getHandler(), context.getClass()]);
     if (skip) {
-      // Per-request responses (echo, status, probes) must not be stored by any cache either:
-      // the conditional-GET middleware keeps a Cache-Control that is already set.
+      // Per-request responses (echo, status, probes) must not be stored by any cache either,
+      // for every method (HEAD included): the conditional-GET middleware keeps a
+      // Cache-Control that is already set.
       res.setHeader('Cache-Control', 'no-store');
       return next.handle();
     }
+    if (req.method !== 'GET') return next.handle();
     if (this.config.CACHE_TTL_MS === 0) return next.handle();
     if (/\bno-cache\b/i.test(req.headers['cache-control'] ?? '')) {
       res.setHeader('X-Cache', 'BYPASS');
