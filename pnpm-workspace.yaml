@@ -1,0 +1,12 @@
+packages:
+  - .
+
+# Build scripts are opt-in, and none of these need theirs.
+# @scarf/scarf (pulled in by swagger-ui-dist) only phones home.
+# @swc/core and @parcel/watcher ship prebuilt binaries.
+# protobufjs's postinstall only checks its own version.
+allowBuilds:
+  '@parcel/watcher': false
+  '@scarf/scarf': false
+  '@swc/core': false
+  protobufjs: false

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+# Built landing page (pnpm build:web)
+/public/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
