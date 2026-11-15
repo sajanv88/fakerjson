@@ -1,0 +1,43 @@
+@use "@nuvui/react/scss/mixins";
+
+.site-header {
+  --nuv-navbar-gap: calc(var(--spacing) * 2);
+
+  @include mixins.breakpoint("md") {
+    --nuv-navbar-gap: calc(var(--spacing) * 6);
+    --nuv-navbar-padding: calc(var(--spacing) * 8);
+  }
+}
+
+.site-header__brand {
+  display: inline-flex;
+  gap: calc(var(--spacing) * 2);
+  align-items: center;
+  min-block-size: var(--nuv-touch-size);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  text-decoration: none;
+
+  @include mixins.focus-ring;
+}
+
+.site-header__logo {
+  display: grid;
+  place-items: center;
+  inline-size: calc(var(--spacing) * 8);
+  block-size: calc(var(--spacing) * 8);
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.site-header__wide {
+  display: none;
+
+  @include mixins.breakpoint("lg") {
+    display: inline-flex;
+  }
+}

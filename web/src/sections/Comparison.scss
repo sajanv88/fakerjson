@@ -1,0 +1,14 @@
+// The icon and the word both carry the meaning; color only reinforces it.
+.comparison__mark {
+  display: inline-flex;
+  gap: calc(var(--spacing) * 2);
+  align-items: center;
+}
+
+.comparison__mark--yes svg {
+  color: var(--color-success);
+}
+
+.comparison__mark--no {
+  color: var(--color-muted-foreground);
+}

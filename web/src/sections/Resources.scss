@@ -1,0 +1,71 @@
+@use "@nuvui/react/scss/mixins";
+
+.resources__grid {
+  display: grid;
+  gap: calc(var(--spacing) * 5);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+.resources__card {
+  block-size: 100%;
+}
+
+.resources__head {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  align-items: center;
+}
+
+.resources__icon {
+  display: grid;
+  place-items: center;
+  inline-size: calc(var(--spacing) * 9);
+  block-size: calc(var(--spacing) * 9);
+  border-radius: var(--radius-md);
+  background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+}
+
+.resources__list {
+  display: grid;
+  gap: calc(var(--spacing) * 1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resources__item {
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+// A link on its own line is underlined on hover and always distinguishable by its mono font + GET tag.
+.resources__link {
+  display: inline-flex;
+  gap: calc(var(--spacing) * 2);
+  align-items: center;
+  min-block-size: calc(var(--spacing) * 9);
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-decoration: none;
+
+  @include mixins.focus-ring;
+
+  @include mixins.hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (pointer: coarse) {
+    min-block-size: var(--nuv-touch-size);
+  }
+}
+
+.resources__method {
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+}
