@@ -232,6 +232,10 @@ Point DNS for `fakerjson.com` and `www.fakerjson.com` at the ingress controller'
 
 All settings are environment variables, validated at startup. See [.env.example](.env.example).
 
+## Author
+
+Built by [sajanv88](https://github.com/sajanv88). Follow [@sajanvtech on X](https://x.com/sajanvtech) for updates.
+
 ## License
 
 [MIT](LICENSE) © 2026 sajanv88

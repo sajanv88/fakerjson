@@ -103,6 +103,27 @@
   color: var(--color-muted-foreground);
 }
 
+.site-footer__credit {
+  margin: 0;
+  color: var(--color-muted-foreground);
+  font-size: var(--text-sm);
+}
+
+.site-footer__credit-link {
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--color-primary) 60%, transparent);
+  text-underline-offset: 0.2em;
+
+  @include mixins.focus-ring;
+
+  @include mixins.hover {
+    text-decoration-color: var(--color-primary);
+  }
+}
+
 .site-footer__group {
   display: grid;
   gap: calc(var(--spacing) * 3);
