@@ -127,7 +127,9 @@ export const Urls = (maxItems: number, doc: Doc = {}) =>
 /** Nested object (validated recursively). */
 export const Nested = (type: () => new () => object, doc: Doc = {}) =>
   applyDecorators(
-    ApiProperty({ type, ...doc }),
+    // Written inline on purpose: @nestjs/swagger treats a function as a lazy type only when
+    // its name is `type`. Passing the caller's arrow through gives `#/components/schemas/`.
+    ApiProperty({ type: () => type(), ...doc }),
     ValidateNested(),
     TransformType(type),
   );
