@@ -1,0 +1,37 @@
+# Ingress only from the ingress controller; egress only to DNS, Redis and the OTel collector.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fakerjson
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fakerjson
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values: [app-routing-system, ingress-nginx]
+      ports:
+        - port: 3000
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { port: 53, protocol: UDP }
+        - { port: 53, protocol: TCP }
+    # Redis: Azure Cache for Redis (TLS 6380) or an in-cluster Redis (6379).
+    - ports:
+        - { port: 6379, protocol: TCP }
+        - { port: 6380, protocol: TCP }
+    # OpenTelemetry collector: OTLP gRPC (4317) and HTTP (4318).
+    - ports:
+        - { port: 4317, protocol: TCP }
+        - { port: 4318, protocol: TCP }

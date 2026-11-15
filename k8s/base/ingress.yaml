@@ -1,0 +1,32 @@
+# Works with the AKS application routing add-on (managed NGINX) or ingress-nginx.
+# For the real client IP (rate limits are per IP), the ingress controller's
+# LoadBalancer Service needs `externalTrafficPolicy: Local`.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fakerjson
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod # remove if TLS is managed elsewhere
+    nginx.ingress.kubernetes.io/proxy-body-size: 128k
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    # Coarse per-IP guard at the edge; the app enforces the precise limits.
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+    # www.fakerjson.com -> fakerjson.com (301). The certificate covers both names.
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com # or: nginx
+  tls:
+    - hosts: [fakerjson.com, www.fakerjson.com]
+      secretName: fakerjson-tls
+  rules:
+    - host: fakerjson.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fakerjson
+                port:
+                  name: http

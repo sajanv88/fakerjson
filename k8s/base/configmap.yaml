@@ -1,0 +1,40 @@
+# Non-secret settings. REDIS_URL lives in the `fakerjson-redis` Secret (see README).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fakerjson-config
+data:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  PUBLIC_BASE_URL: https://fakerjson.com
+  # Ingress controller pods live on the private pod network: trust X-Forwarded-For from there.
+  TRUST_PROXY: loopback,linklocal,uniquelocal
+  CORS_ORIGINS: "*"
+  # Above the ingress-nginx upstream keep-alive (60s).
+  KEEP_ALIVE_TIMEOUT_MS: "65000"
+  SHUTDOWN_DELAY_MS: "5000"
+  SWAGGER_ENABLED: "true"
+  REDIS_KEY_PREFIX: fakerjson
+  CACHE_TTL_MS: "600000"
+  CACHE_MEMORY_MAX_ITEMS: "5000"
+  HTTP_CACHE_MAX_AGE_S: "300"
+  RATE_LIMIT_TTL_MS: "60000"
+  RATE_LIMIT_LIMIT: "300"
+  RATE_LIMIT_BURST_TTL_MS: "1000"
+  RATE_LIMIT_BURST_LIMIT: "25"
+  RATE_LIMIT_WRITE_TTL_MS: "60000"
+  RATE_LIMIT_WRITE_LIMIT: "60"
+  DEFAULT_SEED: "42"
+  MAX_DELAY_MS: "10000"
+  DATASET_CACHE_SIZE: "64"
+  # --- OpenTelemetry (standard OTEL_* settings; point the endpoint at your collector) ---
+  OTEL_SERVICE_NAME: fakerjson
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  # Public traffic: keep 10% of new traces, and always follow an upstream decision.
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: "0.1"
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_METRIC_EXPORT_INTERVAL: "30000"
+  # Logs stay on stdout (JSON with trace_id/span_id); set to "otlp" to ship them too.
+  OTEL_LOGS_EXPORTER: none

@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fakerjson
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: fakerjson
+      app.kubernetes.io/part-of: fakerjson
+    includeSelectors: false
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+
+images:
+  - name: fakerjson
+    newName: ghcr.io/your-github-owner/fakerjson # lowercase GitHub user or org
+    newTag: "1.0.0" # or: kustomize edit set image fakerjson=ghcr.io/<owner>/fakerjson:<tag>
+
+# Only needed while the GHCR package is private (see README):
+# patches:
+#   - target: { kind: Deployment, name: fakerjson }
+#     patch: |-
+#       - op: add
+#         path: /spec/template/spec/imagePullSecrets
+#         value: [{ name: ghcr-pull }]
