@@ -1,14 +1,48 @@
-# Tests every push and PR; publishes the image to GitHub Container Registry (ghcr.io).
-#   push to main  -> ghcr.io/sajanv88/fakerjson:main, :sha-<short>
-#   tag v1.2.3    -> ghcr.io/sajanv88/fakerjson:1.2.3, :1.2, :latest
-#   pull request  -> builds the image but does not push it
+# Tests every push and PR. Images are built once, from main, and only promoted by tags.
+#   pull request  -> test, and build the image without pushing it
+#   push to main  -> test, build and push ghcr.io/sajanv88/fakerjson:main and :sha-<short>
+#   tag v1.2.3    -> no rebuild: the image already built from main for that commit
+#                    (:sha-<short>) is retagged :1.2.3, :1.2 and :latest. Same digest,
+#                    so its SBOM and provenance still apply.
+#                    Pre-releases (v1.2.3-rc.1) get only their own tag.
 name: CI
 
+# Runs only when something that goes into the tested, built image changes. Docs, k8s
+# manifests and other files alone don't trigger it. Tag pushes ignore `paths` (GitHub
+# doesn't evaluate path filters for tags), so releases always run.
 on:
   push:
     branches: [main]
     tags: ['v*.*.*']
+    paths:
+      - 'src/**'
+      - 'web/**'
+      - 'test/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig*.json'
+      - 'nest-cli.json'
+      - 'vitest.config*.ts'
+      - '.oxlintrc.json'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/ci.yaml'
   pull_request:
+    paths: # keep in sync with push.paths
+      - 'src/**'
+      - 'web/**'
+      - 'test/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig*.json'
+      - 'nest-cli.json'
+      - 'vitest.config*.ts'
+      - '.oxlintrc.json'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/ci.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +53,7 @@ permissions:
 
 jobs:
   test:
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -39,6 +74,7 @@ jobs:
 
   image:
     needs: test
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -68,12 +104,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.image.outputs.name }}
+          # :sha-<7 chars> is what a release tag promotes (see the release job).
           tags: |
             type=ref,event=branch
-            type=sha,prefix=sha-
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=FakerJson
             org.opencontainers.image.description=Free fake REST API with stable, relational Faker data
@@ -99,3 +133,72 @@ jobs:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+  release:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write # add tags to the existing image
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # to check that the tagged commit is on main
+
+      - name: Resolve the tagged commit and its image
+        id: release
+        run: |
+          set -euo pipefail
+          commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$commit" origin/main; then
+            echo "::error::${GITHUB_REF_NAME} points at ${commit}, which is not on main. Tag a commit from main."
+            exit 1
+          fi
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fakerjson"
+          version="${GITHUB_REF_NAME#v}"
+          tags="-t ${image}:${version}"
+          # Stable releases also move X.Y and latest; pre-releases don't.
+          if [[ "$version" != *-* ]]; then
+            tags="${tags} -t ${image}:${version%.*} -t ${image}:latest"
+          fi
+          {
+            echo "source=${image}:sha-${commit::7}"
+            echo "tags=${tags}"
+            echo "version=${version}"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # A tag pushed together with its commit can arrive before main's build finishes.
+      - name: Wait for the image built from main
+        env:
+          SOURCE: ${{ steps.release.outputs.source }}
+        run: |
+          for attempt in $(seq 1 40); do
+            if docker buildx imagetools inspect "$SOURCE" > /dev/null 2>&1; then
+              echo "Found $SOURCE"
+              exit 0
+            fi
+            echo "Waiting for $SOURCE (attempt $attempt/40)..."
+            sleep 30
+          done
+          echo "::error::$SOURCE was not found. Its build on main may have failed or been superseded by a newer push; tag a commit whose main build succeeded."
+          exit 1
+
+      - name: Promote the image (no rebuild)
+        env:
+          SOURCE: ${{ steps.release.outputs.source }}
+          TAGS: ${{ steps.release.outputs.tags }}
+        run: |
+          # Copies the multi-arch manifest under the new tags; the digest is unchanged.
+          # shellcheck disable=SC2086
+          docker buildx imagetools create $TAGS "$SOURCE"
+          docker buildx imagetools inspect "${SOURCE%:*}:${{ steps.release.outputs.version }}"

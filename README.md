@@ -179,18 +179,29 @@ zone and node spread), Service, HPA (3–12 pods on CPU), PDB, Ingress and Netwo
 ### Image: GitHub Container Registry
 
 [.github/workflows/ci.yaml](.github/workflows/ci.yaml) runs lint, typecheck, unit and e2e tests on every
-push and PR. It then builds a multi-arch image (amd64 + arm64) with SBOM and provenance and pushes it to
-`ghcr.io/sajanv88/fakerjson` with the built-in `GITHUB_TOKEN`, so there are no secrets to configure:
+push to `main` and every PR. Images are built only from `main`: a multi-arch image (amd64 + arm64) with SBOM
+and provenance, pushed to `ghcr.io/sajanv88/fakerjson` with the built-in `GITHUB_TOKEN` (no secrets to
+configure). A release tag doesn't rebuild anything. It promotes the image `main` already built for that
+commit to the version tags, so the released digest is exactly the one that was tested.
 
-| Trigger | Tags |
-| --- | --- |
-| push to `main` | `main`, `sha-<short>` |
-| tag `v1.2.3` | `1.2.3`, `1.2`, `latest` |
-| pull request | built, not pushed |
+Pushes and PRs only trigger it when something that goes into the image changes: `src/`, `web/`,
+`test/`, dependencies, build or test config, the `Dockerfile` or the workflow itself. Changes to docs or
+`k8s/` alone don't. Tags always run.
+
+| Trigger | What happens | Tags |
+| --- | --- | --- |
+| pull request | test, build (not pushed) | |
+| push to `main` | test, build, push | `main`, `sha-<short>` |
+| tag `v1.2.3` on a `main` commit | retag `sha-<short>`, no rebuild | `1.2.3`, `1.2`, `latest` |
+| tag `v1.2.3-rc.1` | retag, no rebuild | `1.2.3-rc.1` only |
 
 ```bash
-git tag v1.0.0 && git push origin v1.0.0     # publishes ghcr.io/sajanv88/fakerjson:1.0.0
+git tag v1.0.0 && git push origin v1.0.0     # promotes the latest main image to :1.0.0, :1.0 and :latest
 ```
+
+The tag must point at a commit on `main` whose image was built. If you push the commit and the tag
+together, the release waits (up to 20 minutes) for that build to finish. A commit whose build was
+cancelled by a newer push has no image to promote; tag the newer commit instead.
 
 **Pull access from AKS.** The simplest option is to make the package public after the first push
 (GitHub → profile or org → Packages → fakerjson → Package settings → Change visibility). The image
