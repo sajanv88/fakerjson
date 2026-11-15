@@ -278,6 +278,23 @@ describe('FakerJson (e2e)', () => {
       await http.get('/docs').expect(200);
     });
 
+    it('resolves every $ref in the OpenAPI document', async () => {
+      const doc = (await http.get('/openapi.json').expect(200)).body;
+      const broken: string[] = [];
+      const walk = (node: unknown, at: string): void => {
+        if (!node || typeof node !== 'object') return;
+        for (const [key, value] of Object.entries(node)) {
+          if (key === '$ref' && typeof value === 'string') {
+            const name = value.replace('#/components/schemas/', '');
+            if (!name || !doc.components.schemas[name]) broken.push(`${at} -> ${value}`);
+          } else walk(value, `${at}.${key}`);
+        }
+      };
+      walk(doc, '');
+      expect(broken).toEqual([]);
+      expect(doc.components.schemas.User.properties.address).toEqual({ $ref: '#/components/schemas/Address' });
+    });
+
     it('health probes answer', async () => {
       await http.get('/health/live').expect(200);
       const ready = await http.get('/health/ready').expect(200);
