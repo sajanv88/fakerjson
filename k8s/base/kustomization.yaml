@@ -21,8 +21,8 @@ resources:
 
 images:
   - name: fakerjson
-    newName: ghcr.io/your-github-owner/fakerjson # lowercase GitHub user or org
-    newTag: "1.0.0" # or: kustomize edit set image fakerjson=ghcr.io/<owner>/fakerjson:<tag>
+    newName: ghcr.io/sajanv88/fakerjson
+    newTag: "1.0.0" # bump per release: kustomize edit set image fakerjson=ghcr.io/sajanv88/fakerjson:<tag>
 
 # Only needed while the GHCR package is private (see README):
 # patches:

@@ -180,7 +180,7 @@ zone and node spread), Service, HPA (3–12 pods on CPU), PDB, Ingress and Netwo
 
 [.github/workflows/ci.yaml](.github/workflows/ci.yaml) runs lint, typecheck, unit and e2e tests on every
 push and PR. It then builds a multi-arch image (amd64 + arm64) with SBOM and provenance and pushes it to
-`ghcr.io/<owner>/fakerjson` with the built-in `GITHUB_TOKEN`, so there are no secrets to configure:
+`ghcr.io/sajanv88/fakerjson` with the built-in `GITHUB_TOKEN`, so there are no secrets to configure:
 
 | Trigger | Tags |
 | --- | --- |
@@ -189,7 +189,7 @@ push and PR. It then builds a multi-arch image (amd64 + arm64) with SBOM and pro
 | pull request | built, not pushed |
 
 ```bash
-git tag v1.0.0 && git push origin v1.0.0     # publishes ghcr.io/<owner>/fakerjson:1.0.0
+git tag v1.0.0 && git push origin v1.0.0     # publishes ghcr.io/sajanv88/fakerjson:1.0.0
 ```
 
 **Pull access from AKS.** The simplest option is to make the package public after the first push
@@ -199,7 +199,7 @@ then uncomment the `imagePullSecrets` patch in `k8s/base/kustomization.yaml`:
 
 ```bash
 kubectl -n fakerjson create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<token-with-read:packages>
+  --docker-server=ghcr.io --docker-username=sajanv88 --docker-password=<token-with-read:packages>
 ```
 
 ### Deploy
@@ -210,8 +210,8 @@ kubectl create namespace fakerjson
 kubectl -n fakerjson create secret generic fakerjson-redis \
   --from-literal=REDIS_URL='rediss://:<access-key>@<name>.redis.cache.windows.net:6380'
 
-# 2. Point the manifests at your image (host fakerjson.com is already set), then apply
-(cd k8s/base && kustomize edit set image fakerjson=ghcr.io/<owner>/fakerjson:1.0.0)
+# 2. Set the release tag (image ghcr.io/sajanv88/fakerjson and host fakerjson.com are already set), then apply
+(cd k8s/base && kustomize edit set image fakerjson=ghcr.io/sajanv88/fakerjson:1.0.0)
 kubectl apply -k k8s/base
 ```
 
